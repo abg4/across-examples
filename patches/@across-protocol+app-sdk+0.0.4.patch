@@ -1,0 +1,21 @@
+diff --git a/node_modules/@across-protocol/app-sdk/dist/actions/waitForFillTx.js b/node_modules/@across-protocol/app-sdk/dist/actions/waitForFillTx.js
+index ca1c09e..b2baaec 100644
+--- a/node_modules/@across-protocol/app-sdk/dist/actions/waitForFillTx.js
++++ b/node_modules/@across-protocol/app-sdk/dist/actions/waitForFillTx.js
+@@ -47,11 +47,11 @@ export async function waitForFillTxEvent(params) {
+                 reject(error);
+             },
+             onLogs: async (fillLogs) => {
+-                if (fillLogs.length) {
+-                    logger
+-                        ? logger.debug("Fill events found in block", fillLogs)
+-                        : console.log("Fill events found in block", fillLogs);
+-                }
++                // if (fillLogs.length) {
++                //     logger
++                //         ? logger.debug("Fill events found in block", fillLogs)
++                //         : console.log("Fill events found in block", fillLogs);
++                // }
+                 const [fillLog] = fillLogs;
+                 if (fillLog) {
+                     try {

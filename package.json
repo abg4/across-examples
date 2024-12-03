@@ -1,0 +1,40 @@
+{
+  "name": "across-examples",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "yarn clean && tsc --build",
+    "start": "yarn build && node dist/index.js",
+    "lint": "yarn build && eslint",
+    "lint:fix": "yarn build && eslint --fix",
+    "format": "prettier --write .",
+    "postinstall": "patch-package"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@across-protocol/app-sdk": "^0.0.4",
+    "@ethersproject/bignumber": "^5.6.2",
+    "@indexcoop/flash-mint-sdk": "^3.13.0",
+    "@types/node": "^22.9.1",
+    "@types/yargs": "^17.0.33",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3",
+    "viem": "^2.21.32",
+    "winston": "^3.17.0",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0"
+  }
+}

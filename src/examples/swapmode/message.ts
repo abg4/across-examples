@@ -34,13 +34,13 @@ export async function createCrossChainMessage(
         callData: initialZapQuote.callData,
         value: 0n,
         update: async (outputAmount: bigint) => {
-          const initialZapQuote = await getZapQuote(
+          const updatedZapQuote = await getZapQuote(
             address,
             outputAmount.toString()
           );
 
           return {
-            callData: initialZapQuote.callData,
+            callData: updatedZapQuote.callData,
           };
         },
       },

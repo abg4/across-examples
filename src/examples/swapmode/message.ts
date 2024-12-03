@@ -1,18 +1,17 @@
+import fetch from 'node-fetch';
 import { type Address, encodeFunctionData, parseAbiItem } from 'viem';
 import { config, networkConfig } from './config.js';
 import { type CrossChainMessage } from '../../types/index.js';
 import { logger } from '../../utils/logger.js';
+import { URLSearchParams } from 'url';
 
 export async function createCrossChainMessage(
-  fallbackRecipient: Address
+  address: Address
 ): Promise<CrossChainMessage> {
-  const initialZapQuote = await getZapQuote(
-    fallbackRecipient,
-    config.amount.toString()
-  );
+  const initialZapQuote = await getZapQuote(address, config.amount.toString());
 
   return {
-    fallbackRecipient: fallbackRecipient,
+    fallbackRecipient: address,
     actions: [
       {
         target: config.outputToken,
@@ -36,7 +35,7 @@ export async function createCrossChainMessage(
         value: 0n,
         update: async (outputAmount: bigint) => {
           const initialZapQuote = await getZapQuote(
-            fallbackRecipient,
+            address,
             outputAmount.toString()
           );
 
@@ -70,14 +69,11 @@ export async function getZapQuote(account: Address, amount: string) {
     slippage: '100',
   });
 
-  const routeResponse = await fetch(
-    `${networkConfig.zapApi}?${routeParams}`,
-    {
-      headers: {
-        'x-client-id': 'Swapmode',
-      },
-    }
-  );
+  const routeResponse = await fetch(`${networkConfig.zapApi}?${routeParams}`, {
+    headers: {
+      'x-client-id': 'Swapmode',
+    },
+  });
 
   if (!routeResponse.ok) {
     logger.error(`Route fetch failed: ${routeResponse.statusText}`);
@@ -99,17 +95,14 @@ export async function getZapQuote(account: Address, amount: string) {
     permits: {},
   };
 
-  const buildResponse = await fetch(
-    `${networkConfig.zapApi}/build`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-client-id': 'Swapmode',
-      },
-      body: JSON.stringify(buildParams),
-    }
-  );
+  const buildResponse = await fetch(`${networkConfig.zapApi}/build`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-client-id': 'Swapmode',
+    },
+    body: JSON.stringify(buildParams),
+  });
 
   if (!buildResponse.ok) {
     logger.error(`Route fetch failed: ${buildResponse.statusText}`);

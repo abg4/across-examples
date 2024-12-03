@@ -22,7 +22,7 @@ import { eligibleChains } from '../../utils/constants.js';
 import { logger } from '../../utils/logger.js';
 
 export async function createCrossChainMessage(
-  fallbackRecipient: Address
+  address: Address
 ): Promise<CrossChainMessage | undefined> {
   const indexQuote = await getIndexQuote(
     config.amount,
@@ -45,7 +45,7 @@ export async function createCrossChainMessage(
   }
 
   return {
-    fallbackRecipient: fallbackRecipient,
+    fallbackRecipient: address,
     actions: [
       {
         target: config.outputToken,

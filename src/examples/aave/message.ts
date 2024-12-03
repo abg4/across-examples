@@ -3,10 +3,10 @@ import { config } from './config.js';
 import { type CrossChainMessage } from '../../types/index.js';
 
 export async function createCrossChainMessage(
-  fallbackRecipient: Address
+  address: Address
 ): Promise<CrossChainMessage> {
   return {
-    fallbackRecipient: fallbackRecipient,
+    fallbackRecipient: address,
     actions: [
       {
         target: config.outputToken,
@@ -28,7 +28,7 @@ export async function createCrossChainMessage(
         target: config.contractAddress,
         callData: generateDepositCallData(
           config.outputToken,
-          fallbackRecipient,
+          address,
           config.amount
         ),
         value: 0n,
@@ -36,7 +36,7 @@ export async function createCrossChainMessage(
           return {
             callData: generateDepositCallData(
               config.outputToken as `0x${string}`,
-              fallbackRecipient,
+              address,
               outputAmount
             ),
           };

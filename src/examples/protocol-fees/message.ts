@@ -3,7 +3,7 @@ import { config, feeConfig } from './config.js';
 import { type CrossChainMessage } from '../../types/index.js';
 
 export async function createCrossChainMessage(
-  fallbackRecipient: Address
+  address: Address
 ): Promise<CrossChainMessage> {
   // Calculate initial fee amount based on input amount
   const initialFeeAmount =
@@ -12,14 +12,11 @@ export async function createCrossChainMessage(
   const initialRecipientAmount = config.amount - initialFeeAmount;
 
   return {
-    fallbackRecipient: fallbackRecipient,
+    fallbackRecipient: address,
     actions: [
       {
         target: config.outputToken,
-        callData: generateTransferCallData(
-          fallbackRecipient,
-          initialRecipientAmount
-        ),
+        callData: generateTransferCallData(address, initialRecipientAmount),
         value: 0n,
         update: (outputAmount: bigint) => {
           // Calculate fee amount based on output amount
@@ -30,10 +27,7 @@ export async function createCrossChainMessage(
           const recipientAmount = outputAmount - feeAmount;
 
           return {
-            callData: generateTransferCallData(
-              fallbackRecipient,
-              recipientAmount
-            ),
+            callData: generateTransferCallData(address, recipientAmount),
           };
         },
       },

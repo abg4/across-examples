@@ -17,6 +17,7 @@ import type {
   CreateMessageFn,
   TenderlyConfig,
 } from '../types/index.js';
+import { createTransactionUrl } from './helpers.js';
 
 export async function executeAcrossTxs(
   config: Config,
@@ -91,6 +92,9 @@ export async function executeAcrossTxs(
     crossChainMessage: crossChainMessage,
   });
 
+  logger.info('');
+  logger.info('Executing Transactions...');
+
   await acrossClient.executeQuote({
     walletClient,
     deposit: quote?.deposit,
@@ -98,22 +102,27 @@ export async function executeAcrossTxs(
       if (progress.step === 'approve' && progress.status === 'txSuccess') {
         const { txReceipt } = progress;
         logger.info(
-          '-    Transaction hash for approval tx: ' + txReceipt.transactionHash
+          '-    Transaction hash for approval tx: ' +
+            createTransactionUrl(config.sourceChain, txReceipt.transactionHash)
         );
       }
 
       if (progress.status === 'txSuccess' && progress.step === 'deposit') {
         const { txReceipt } = progress;
         logger.info(
-          '-    Transaction hash for deposit tx: ' + txReceipt.transactionHash
+          '-    Transaction hash for deposit tx: ' +
+            createTransactionUrl(config.sourceChain, txReceipt.transactionHash)
         );
       }
 
       if (progress.step === 'fill' && progress.status === 'txSuccess') {
         const { actionSuccess, txReceipt } = progress;
         logger.info(
-          '-    Transaction hash for fill tx: ',
-          txReceipt.transactionHash
+          '-    Transaction hash for fill tx: ' +
+            createTransactionUrl(
+              config.destinationChain,
+              txReceipt.transactionHash
+            )
         );
         if (actionSuccess) {
           logger.info(

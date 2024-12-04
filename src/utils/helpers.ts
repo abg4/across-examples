@@ -1,5 +1,7 @@
 import fs from 'fs';
 import { logger } from './logger.js';
+import { eligibleChains } from './constants.js';
+import type { Chain } from 'viem';
 
 export function appendIdToFile(newId: string) {
   const filePath = './testnet-ids.json';
@@ -53,4 +55,25 @@ export function createTenderlyUrl(
   txId: string
 ): string {
   return `https://dashboard.tenderly.co/${project}/project/testnet/${projectId}/tx/${chain}/${txId}`;
+}
+
+export function createTransactionUrl(chainId: number, transactionHash: string) {
+  // Find the chain info from eligibleChains using chainId
+  const chainInfo = eligibleChains.find((chain: Chain) => chain.id === chainId);
+
+  if (!chainInfo || !chainInfo.blockExplorers) {
+    logger.warn(`No block explorer found for chain ID ${chainId}`);
+    return '';
+  }
+
+  // Get the block explorer URL
+  let blockExplorerUrl = chainInfo.blockExplorers.default.url;
+
+  // Ensure the block explorer URL ends with a slash
+  if (!blockExplorerUrl.endsWith('/')) {
+    blockExplorerUrl += '/';
+  }
+
+  // Append the transaction hash to create the full URL
+  return `${blockExplorerUrl}tx/${transactionHash}`;
 }

@@ -8,6 +8,7 @@ export async function createCrossChainMessage(
   return {
     fallbackRecipient: fallbackRecipient,
     actions: [
+      // Approve the output token
       {
         target: config.outputToken,
         callData: generateApproveCallData(
@@ -24,6 +25,7 @@ export async function createCrossChainMessage(
           };
         },
       },
+      // Deposit the output token to the ICHI Vault
       {
         target: config.contractAddress,
         callData: generateDepositCallData(

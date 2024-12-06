@@ -3,6 +3,7 @@ import {
   type Chain,
   encodeFunctionData,
   parseAbiItem,
+  parseUnits,
 } from 'viem';
 import {
   config,
@@ -12,7 +13,6 @@ import {
   bufferPercentage,
 } from './config.js';
 import { type CrossChainMessage } from '../../types/index.js';
-import { BigNumber } from '@ethersproject/bignumber';
 import {
   FlashMintQuoteProvider,
   ZeroExSwapQuoteProvider,
@@ -35,9 +35,8 @@ export async function createCrossChainMessage(
     logger.error('Unable to retrieve index quote');
     return;
   }
-  const { tx } = indexQuote;
-  const flashMintContract = tx.to as `0x${string}`;
-  const flashMintData = tx.data;
+  const flashMintContract = indexQuote.tx.to as `0x${string}`;
+  const flashMintData = indexQuote.tx.data as `0x${string}`;
 
   if (!flashMintData || !flashMintContract) {
     logger.error('Unable to retrieve flashMintData');
@@ -47,46 +46,60 @@ export async function createCrossChainMessage(
   return {
     fallbackRecipient: address,
     actions: [
-      {
-        target: config.outputToken,
-        callData: generateApproveCallData(flashMintContract, config.amount),
-        value: 0n,
-        update: (outputAmount: bigint) => {
-          return {
-            callData: generateApproveCallData(flashMintContract, outputAmount),
-          };
-        },
-      },
-      {
-        target: flashMintContract,
-        callData: flashMintData as `0x${string}`,
-        value: 0n,
-        update: async (outputAmount: bigint) => {
-          const updatedIndexQuote = await getIndexQuote(
-            outputAmount,
-            indexInputToken,
-            indexOutputToken,
-            config.destinationChain
-          );
-
-          if (!updatedIndexQuote) {
-            logger.error('Unable to retrieve index quote');
-            return { callData: undefined, value: undefined };
-          }
-          const { tx } = updatedIndexQuote;
-          const flashMintData = tx.data;
-          if (!flashMintData) {
-            logger.error('Unable to retrieve index flashMintData');
-            return { callData: undefined, value: undefined };
-          }
-
-          return {
-            to: tx.to,
-            callData: flashMintData as `0x${string}`,
-          };
-        },
-      },
+      createApproveAction(flashMintContract, config.amount),
+      createFlashMintAction(
+        flashMintContract,
+        flashMintData,
+        indexInputToken,
+        indexOutputToken
+      ),
+      // TODO: Add approval for CCIP
+      // createApproveAction(ccipContract, config.amount),
+      // TODO: Create ccipSend action
+      // createCcipSendAction(),
     ],
+  };
+}
+
+function createApproveAction(flashMintContract: Address, amount: bigint) {
+  return {
+    target: config.outputToken,
+    callData: generateApproveCallData(flashMintContract, amount),
+    value: 0n,
+    update: (outputAmount: bigint) => ({
+      callData: generateApproveCallData(flashMintContract, outputAmount),
+    }),
+  };
+}
+
+function createFlashMintAction(
+  flashMintContract: Address,
+  flashMintData: `0x${string}`,
+  inputToken: QuoteToken,
+  outputToken: QuoteToken
+) {
+  return {
+    target: flashMintContract,
+    callData: flashMintData,
+    value: 0n,
+    update: async (outputAmount: bigint) => {
+      const updatedIndexQuote = await getIndexQuote(
+        outputAmount,
+        inputToken,
+        outputToken,
+        config.destinationChain
+      );
+
+      if (!updatedIndexQuote?.tx?.data) {
+        logger.error('Unable to retrieve valid updated index quote');
+        return { callData: undefined, value: undefined };
+      }
+
+      return {
+        to: updatedIndexQuote.tx.to,
+        callData: updatedIndexQuote.tx.data as `0x${string}`,
+      };
+    },
   };
 }
 
@@ -99,43 +112,21 @@ export async function getIndexQuote(
   const mainnetRpc = eligibleChains.find(
     (chain: Chain) => chain.id === destinationChain
   )?.rpcUrls.default.http[0];
+
   if (!mainnetRpc) {
     logger.error('Unable to get mainnet rpc.');
     return undefined;
   }
-  // Use the 0x swap quote provider configured to your needs e.g. custom base url -
-  // or provide your own adapter implementing the `SwapQuoteProvider` interface
-  const zeroexSwapQuoteProvider = new ZeroExSwapQuoteProvider();
-  const quoteProvider = new FlashMintQuoteProvider(
+
+  const acrossAmount = calculateAcrossAmount(amount, inputToken);
+  const quote = await getQuoteFromProvider(
     mainnetRpc,
-    zeroexSwapQuoteProvider
+    acrossAmount,
+    inputToken,
+    outputToken
   );
 
-  let acrossAmount: BigNumber = BigNumber.from(amount);
-  if (indexInputToken.symbol === 'USDC') {
-    acrossAmount = BigNumber.from(amount).mul(BigNumber.from(10).pow(12));
-
-    // Calculate slippage amount and reduce acrossAmount
-    const buffer = BigNumber.from(Math.floor(bufferPercentage * 100)); // Convert to BigNumber
-    acrossAmount = acrossAmount.mul(buffer).div(BigNumber.from(10000)); // Adjust division for decimal
-  }
-
-  const quote = await quoteProvider.getQuote({
-    isMinting: true,
-    inputToken: inputToken,
-    outputToken: outputToken,
-    inputTokenAmount: '0',
-    indexTokenAmount: BigNumber.from(acrossAmount).toString(),
-    slippage,
-  });
-
-  if (!quote) {
-    logger.error('Failed to retrieve Index quote.');
-    return undefined;
-  }
-
-  const { tx } = quote;
-  return { quote, tx };
+  return quote ? { quote, tx: quote.tx } : undefined;
 }
 
 export function generateApproveCallData(spender: Address, amount: bigint) {
@@ -147,19 +138,43 @@ export function generateApproveCallData(spender: Address, amount: bigint) {
   return approveCallData;
 }
 
-export function generateDepositCallData(
-  outputToken: Address,
-  userAddress: Address,
-  amount: bigint
+async function getQuoteFromProvider(
+  mainnetRpc: string,
+  amount: string,
+  inputToken: QuoteToken,
+  outputToken: QuoteToken
 ) {
-  const aaveReferralCode = 0;
+  const zeroexSwapQuoteProvider = new ZeroExSwapQuoteProvider();
+  const quoteProvider = new FlashMintQuoteProvider(
+    mainnetRpc,
+    zeroexSwapQuoteProvider
+  );
 
-  return encodeFunctionData({
-    abi: [
-      parseAbiItem(
-        'function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)'
-      ),
-    ],
-    args: [outputToken, amount, userAddress, aaveReferralCode],
-  });
+  try {
+    return await quoteProvider.getQuote({
+      isMinting: true,
+      inputToken,
+      outputToken,
+      inputTokenAmount: '0',
+      indexTokenAmount: amount,
+      slippage,
+    });
+  } catch (error) {
+    logger.error('Failed to retrieve Index quote:', error);
+    return undefined;
+  }
+}
+
+const BUFFER_BPS = Math.floor(bufferPercentage * 100);
+
+function calculateAcrossAmount(amount: bigint, inputToken: QuoteToken): string {
+  if (inputToken.symbol !== 'USDC') {
+    return amount.toString();
+  }
+
+  // Scale the amount and apply buffer in one operation
+  const scaledAmount = (amount * BigInt(BUFFER_BPS)) / 10000n;
+
+  // Convert from USDC (6 decimals) to 18 decimals
+  return parseUnits(scaledAmount.toString(), 12).toString();
 }

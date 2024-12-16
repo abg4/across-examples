@@ -384,10 +384,10 @@
   resolved "https://registry.yarnpkg.com/@humanwhocodes/retry/-/retry-0.4.1.tgz#9a96ce501bc62df46c4031fbd970e3cc6b10f07b"
   integrity sha512-c7hNEllBlenFTHBky65mhq8WD2kbN9Q6gk0bTk8lSBvc554jpXSkST1iePudpt7+A/AQvuHs9EMqjHDXMY1lrA==
 
-"@indexcoop/flash-mint-sdk@^3.13.0":
-  version "3.13.0"
-  resolved "https://registry.yarnpkg.com/@indexcoop/flash-mint-sdk/-/flash-mint-sdk-3.13.0.tgz#4f249fd2c985d44841f375e6bb58747bfa6f8f8d"
-  integrity sha512-yajOXCucKIUYuA2puyo2TFw3rGX/qZi8TD6az0O5hflzenuiKDhC/y8Vo+MTLsVwXpdY9krCCmWP1RMixv15xw==
+"@indexcoop/flash-mint-sdk@^3.19.0":
+  version "3.19.0"
+  resolved "https://registry.yarnpkg.com/@indexcoop/flash-mint-sdk/-/flash-mint-sdk-3.19.0.tgz#5ed89b54f3420a87966ba8a7b010785703fb25dc"
+  integrity sha512-stoqJ5YtbUy5jML9h1vruOQDN08r93G6XxLfvCQoK8e9YlJohy+/ahGbSw2c1LQ29ad5PF515oAqZanUz5CcqA==
   dependencies:
     "@ethersproject/abstract-provider" "^5.6.1"
     "@ethersproject/abstract-signer" "^5.6.2"
@@ -395,17 +395,17 @@
     "@ethersproject/contracts" "^5.6.2"
     "@ethersproject/providers" "^5.6.8"
     "@ethersproject/units" "^5.6.1"
-    "@indexcoop/tokenlists" "^3.1.5"
+    "@indexcoop/tokenlists" "3.3.0"
     "@lifi/sdk" "3.0.0-beta.1"
     "@uniswap/sdk-core" "^5.3.1"
     "@uniswap/v3-sdk" "^3.13.1"
     axios "^0.27.2"
     viem "^2.10.2"
 
-"@indexcoop/tokenlists@^3.1.5":
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/@indexcoop/tokenlists/-/tokenlists-3.2.0.tgz#33a69a7757d93ff9f0964f11566dae741a17204a"
-  integrity sha512-upPAyAHZFb9h64YZo4vHKYNtJi0xns6+zqhI7t3vR9BX7mNmBO9rM5KWiIju0TSTVQX+6f1w7jPbT+lhFsS0EQ==
+"@indexcoop/tokenlists@3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@indexcoop/tokenlists/-/tokenlists-3.3.0.tgz#fe8de770416560c1b945554a732714acfe7a559a"
+  integrity sha512-33CXTvrFPJ7m96GbPwx15pdCwXUPMAw3kXxZatBRJVYzIyhsEL7lHS4r/htCY3c/B+tocUu6DGtRF8O0/ywuJQ==
   dependencies:
     "@uniswap/token-lists" "^1.0.0-beta.34"
     viem "^2.21.14"

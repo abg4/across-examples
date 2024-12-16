@@ -20,6 +20,7 @@ export interface VirtualTestnetParams {
   blockExplorerUrl?: string; // Optional in case the RPC is not found
   project: string;
   tenderlyName: string;
+  testnet: boolean;
 }
 
 export interface QuoteDeposit {
@@ -70,3 +71,8 @@ export interface TenderlyConfig {
   TENDERLY_ACCOUNT: string;
   TENDERLY_PROJECT: string;
 }
+
+export type EligibleChain = Chain & {
+  testnet: boolean;
+  tenderlyName: string;
+};

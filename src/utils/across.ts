@@ -17,7 +17,15 @@ export async function setupAcrossClient(
     logger.error('Unable to setup vitual testnest rpc configs');
     return;
   }
-  const acrossClient = generateAcrossClient(rpcUrls, tenderlyConfig);
+
+  const useTestnet =
+    virtualSourceChain.testnet || virtualDestinationChain.testnet;
+
+  const acrossClient = generateAcrossClient(
+    rpcUrls,
+    tenderlyConfig,
+    useTestnet
+  );
   logger.info('-  Across client successful');
 
   return acrossClient;
@@ -25,11 +33,13 @@ export async function setupAcrossClient(
 
 export function generateAcrossClient(
   rpcUrls: RpcUrls,
-  tenderlyConfig: TenderlyConfig
+  tenderlyConfig: TenderlyConfig,
+  useTestnet: boolean
 ) {
   return createAcrossClient({
     integratorId, // 2-byte hex string
     chains: eligibleChains,
+    useTestnet,
     rpcUrls,
     tenderly: {
       simOnError: true,

@@ -1,6 +1,14 @@
-import { arbitrum, base, mainnet, polygon, linea } from 'viem/chains';
+import {
+  arbitrum,
+  base,
+  mainnet,
+  polygon,
+  linea,
+  sepolia,
+  baseSepolia,
+} from 'viem/chains';
 import { parseUnits } from 'viem';
-import type { TenderlyConfig } from '../types/index.js';
+import type { TenderlyConfig, EligibleChain } from '../types/index.js';
 
 export const DEFAULT_TENDERLY_CONFIG: TenderlyConfig = {
   TENDERLY_ACCESS_KEY: 'GjptgtTTOeEVLCXijfFyIpmLFJRKHJgx',
@@ -8,12 +16,14 @@ export const DEFAULT_TENDERLY_CONFIG: TenderlyConfig = {
   TENDERLY_PROJECT: 'project',
 };
 
-export const eligibleChains = [
-  { ...arbitrum, tenderlyName: 'arbitrum' },
-  { ...base, tenderlyName: 'base' },
-  { ...mainnet, tenderlyName: 'mainnet' },
-  { ...polygon, tenderlyName: 'polygon' },
-  { ...linea, tenderlyName: 'linea' },
+export const eligibleChains: EligibleChain[] = [
+  { ...arbitrum, testnet: false, tenderlyName: 'arbitrum' },
+  { ...base, testnet: false, tenderlyName: 'base' },
+  { ...mainnet, testnet: false, tenderlyName: 'mainnet' },
+  { ...polygon, testnet: false, tenderlyName: 'polygon' },
+  { ...linea, testnet: false, tenderlyName: 'linea' },
+  { ...sepolia, testnet: true, tenderlyName: 'sepolia' },
+  { ...baseSepolia, testnet: true, tenderlyName: 'baseSepolia' },
 ];
 
 export const fundingAmount = parseUnits('1000', 18);

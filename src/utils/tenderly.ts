@@ -41,7 +41,7 @@ export async function createVirtualTestnet(
   const timestamp = Date.now();
   const options = {
     method: 'POST',
-    url: `https://api.tenderly.co/api/v1/account/${tenderlyConfig.TENDERLY_ACCOUNT}/project/project/vnets`,
+    url: `https://api.tenderly.co/api/v1/account/${tenderlyConfig.TENDERLY_ACCOUNT}/project/${tenderlyConfig.TENDERLY_PROJECT}/vnets`,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
@@ -63,11 +63,9 @@ export async function createVirtualTestnet(
   try {
     const { data } = await axios.request(options);
 
-    const tenderlyName = eligibleChains.find(
-      (chain) => chain.id === chainId
-    )?.tenderlyName;
-    if (!tenderlyName) {
-      logger.error(`No tenderly name found for chain ${chainId}`);
+    const chainInfo = eligibleChains.find((chain) => chain.id === chainId);
+    if (!chainInfo) {
+      logger.error(`No chain info found for chain ${chainId}`);
       return;
     }
 
@@ -78,7 +76,8 @@ export async function createVirtualTestnet(
       blockExplorerUrl: data.rpcs.find((rpc: RPC) => rpc.name === 'Public RPC')
         ?.url, // URL for "Public RPC"
       project: tenderlyConfig.TENDERLY_ACCOUNT,
-      tenderlyName,
+      tenderlyName: chainInfo.tenderlyName,
+      testnet: chainInfo.testnet,
     };
 
     logger.info('Created Virtual network with id: ' + extractedData.id);
@@ -159,5 +158,6 @@ export function generateVirtualConfig(virtualChain: VirtualTestnetParams) {
         url: virtualChain.blockExplorerUrl,
       },
     },
+    testnet: virtualChain.testnet,
   };
 }

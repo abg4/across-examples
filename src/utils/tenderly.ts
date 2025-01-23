@@ -101,7 +101,7 @@ async function deleteVirtualTestnet(
   }
   const options = {
     method: 'DELETE',
-    url: `https://api.tenderly.co/api/v1/account/${tenderlyConfig.TENDERLY_ACCOUNT}/project/project/vnets/${vnetId}`,
+    url: `https://api.tenderly.co/api/v1/account/${tenderlyConfig.TENDERLY_ACCOUNT}/project/${tenderlyConfig.TENDERLY_PROJECT}/vnets/${vnetId}`,
     headers: {
       Accept: 'application/json',
       'X-Access-Key': tenderlyConfig.TENDERLY_ACCESS_KEY,

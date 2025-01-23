@@ -50,11 +50,12 @@ export function appendIdToFile(newId: string) {
 
 export function createTenderlyUrl(
   project: string,
+  projectName: string,
   projectId: string,
   chain: string,
   txId: string
 ): string {
-  return `https://dashboard.tenderly.co/${project}/project/testnet/${projectId}/tx/${chain}/${txId}`;
+  return `https://dashboard.tenderly.co/${project}/${projectName}/testnet/${projectId}/tx/${chain}/${txId}`;
 }
 
 export function createTransactionUrl(chainId: number, transactionHash: string) {
@@ -76,4 +77,10 @@ export function createTransactionUrl(chainId: number, transactionHash: string) {
 
   // Append the transaction hash to create the full URL
   return `${blockExplorerUrl}tx/${transactionHash}`;
+}
+
+export function logTransactionSuccess(message: string, url: string) {
+  logger.info(`- ${message}:`);
+  logger.info(`-    ${url}`);
+  logger.info('');
 }

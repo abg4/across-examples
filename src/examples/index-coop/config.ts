@@ -14,7 +14,7 @@ const config: Config = {
   // Address of the output token on the destination chain
   outputToken: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
   // Amount of input tokens to deposit
-  amount: parseUnits('10', 6),
+  amount: parseUnits('100', 6),
   // Address to receive tokens if the primary transaction fails. If left empty, the depositor address is used.
   fallbackRecipient: '',
 };
@@ -35,7 +35,7 @@ const indexOutputToken: QuoteToken = {
 // Slippage set for the Index quote
 const slippage = 0.1;
 // Buffer to prevent failed tx on destination chain
-const bufferPercentage = 97;
+const bufferPercentage = 98.5;
 
 export {
   config,

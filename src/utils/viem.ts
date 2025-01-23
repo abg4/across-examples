@@ -1,5 +1,11 @@
 import { type ConfiguredWalletClient } from '@across-protocol/app-sdk';
-import type { WalletClient, Address, PublicClient, Chain } from 'viem';
+import type {
+  WalletClient,
+  Address,
+  PublicClient,
+  Chain,
+  PrivateKeyAccount,
+} from 'viem';
 import {
   encodeFunctionData,
   parseAbiItem,
@@ -8,11 +14,19 @@ import {
 } from 'viem';
 import { spokePoolAbi } from './abi.js';
 import { logger } from './logger.js';
-import { repaymentChain, eligibleChains } from './constants.js';
+import {
+  repaymentChain,
+  eligibleChains,
+  relayerAddressTestnet,
+  relayerAddressMainnet,
+} from './constants.js';
 import { type Deposit } from '@across-protocol/app-sdk';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
-import { type VirtualTestnetParams } from '../types/index.js';
-import { createTenderlyUrl } from '../utils/helpers.js';
+import {
+  type TenderlyConfig,
+  type VirtualTestnetParams,
+} from '../types/index.js';
+import { createTenderlyUrl, logTransactionSuccess } from '../utils/helpers.js';
 
 export function generateApproveCallData(spender: Address, amount: bigint) {
   const approveCallData = encodeFunctionData({
@@ -55,7 +69,8 @@ export async function spokePoolFillTx(
   publicClient: PublicClient,
   relayerClient: WalletClient,
   spokePoolAddress: Address,
-  chain: VirtualTestnetParams
+  chain: VirtualTestnetParams,
+  tenderlyConfig: TenderlyConfig
 ) {
   if (!relayerClient.account) {
     logger.error('Relayer account is undefined');
@@ -89,30 +104,44 @@ export async function spokePoolFillTx(
 
   const tenderlyUrl = createTenderlyUrl(
     chain.project,
+    tenderlyConfig.TENDERLY_PROJECT,
     chain.id.toString(),
     chain.tenderlyName,
     txHash
   );
 
-  logger.info(`- Sucessfully filled deposit:`);
-  logger.info(`-    ${tenderlyUrl}`);
+  logTransactionSuccess(`Sucessfully filled deposit`, tenderlyUrl);
 
   return txHash;
 }
 
 export function createWalletClientWithAccount(
-  config: Chain
-): ConfiguredWalletClient {
-  const privateKey = generatePrivateKey();
-  const account = privateKeyToAccount(privateKey);
+  config: Chain,
+  isRelayer: boolean
+): {
+  walletClient: ConfiguredWalletClient;
+  privateKey: `0x${string}` | undefined;
+} {
+  let account: Address | PrivateKeyAccount;
+  let privateKey: `0x${string}` | undefined;
+  if (!isRelayer) {
+    privateKey = generatePrivateKey();
+    account = privateKeyToAccount(privateKey);
+  } else {
+    account = config.testnet ? relayerAddressTestnet : relayerAddressMainnet; // use relayer address to simulate tx
+  }
+
   if (!account) {
     throw new Error('Failed to create account');
   }
-  return createWalletClient({
-    account,
-    chain: config,
-    transport: http(config.rpcUrls.default.http[0]),
-  });
+  return {
+    walletClient: createWalletClient({
+      account,
+      chain: config,
+      transport: http(config.rpcUrls.default.http[0]),
+    }),
+    privateKey,
+  };
 }
 
 export function setupPrivateKeyClient(

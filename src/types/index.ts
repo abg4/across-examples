@@ -41,7 +41,8 @@ export interface QuoteDeposit {
 }
 
 export type CreateMessageFn = (
-  recipient: Address
+  recipient: Address,
+  privateKey?: string
 ) => Promise<CrossChainMessage | undefined>;
 
 export interface CrossChainMessage {
@@ -54,6 +55,7 @@ export interface SetupResult {
   chain: VirtualTestnetParams | Chain | undefined;
   address: Address | undefined;
   publicClient?: PublicClient | undefined;
+  privateKey: `0x${string}` | undefined;
 }
 
 export interface Config {

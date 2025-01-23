@@ -33,7 +33,11 @@ import {
   getDepositFromLogs,
 } from '@across-protocol/app-sdk';
 import dotenv from 'dotenv';
-import { createTenderlyUrl } from '../utils/helpers.js';
+import {
+  createTenderlyUrl,
+  createTransactionUrl,
+  logTransactionSuccess,
+} from '../utils/helpers.js';
 
 dotenv.config();
 
@@ -42,6 +46,7 @@ const undefinedChain = {
   walletClient: undefined,
   chain: undefined,
   address: undefined,
+  privateKey: undefined,
 };
 
 export async function simulateAcrossTransaction(
@@ -61,7 +66,7 @@ export async function simulateAcrossTransaction(
       walletClient: relayerWalletClient,
       chain: virtualDestinationChain,
       publicClient,
-    } = await setupVirtualClient(config.destinationChain, tenderlyConfig);
+    } = await setupVirtualClient(config.destinationChain, tenderlyConfig, true);
 
     if (!publicClient || !relayerWalletClient || !virtualDestinationChain) {
       logger.error('Failed to setup virtual testnet.');
@@ -105,25 +110,39 @@ export async function simulateAcrossTransaction(
       updatedDeposit,
       updatedDeposit.spokePoolAddress,
       updatedDeposit.destinationSpokePoolAddress,
-      virtualOriginChain
+      virtualOriginChain,
+      tenderlyConfig
     );
 
     await acrossClient.executeQuote({
       walletClient: userWalletClient,
       deposit: updatedDeposit,
       onProgress: async (progress: ExecutionProgress) => {
-        if (
-          progress.step === 'approve' &&
-          progress.status === 'simulationSuccess'
-        ) {
+        if (progress.step === 'approve' && progress.status === 'txSuccess') {
           // if approving an ERC20, you have access to the approval receipt
-          const { txRequest } = progress;
-          logger.log('-    Transaction hash for approval tx: ', txRequest);
+          const { txReceipt } = progress;
+          const transactionUrl = createTransactionUrl(
+            config.sourceChain,
+            txReceipt.transactionHash
+          );
+          logTransactionSuccess(
+            `- Sucessfully approved spoke pool on origin chain`,
+            transactionUrl
+          );
         }
 
-        if (progress.status === 'txSuccess' && progress.step === 'deposit') {
+        if (progress.step === 'deposit' && progress.status === 'txSuccess') {
           // once deposit is successful you have access to depositId and the receipt
           const { txReceipt } = progress;
+
+          const transactionUrl = createTransactionUrl(
+            config.sourceChain,
+            txReceipt.transactionHash
+          );
+          logTransactionSuccess(
+            `Sucessfully completed deposit on origin chain`,
+            transactionUrl
+          );
 
           const rawDeposit = getDepositFromLogs({
             originChainId: config.sourceChain,
@@ -139,7 +158,8 @@ export async function simulateAcrossTransaction(
             publicClient,
             relayerWalletClient,
             quote.deposit.destinationSpokePoolAddress,
-            virtualDestinationChain as VirtualTestnetParams
+            virtualDestinationChain as VirtualTestnetParams,
+            tenderlyConfig
           );
         }
 
@@ -147,6 +167,7 @@ export async function simulateAcrossTransaction(
           // if the fill is successful, you have access the following data
           const { actionSuccess } = progress;
           // actionSuccess is a boolean flag, telling us if your cross chain messages were successful
+          logger.info('Result of cross chain transaction:');
           if (actionSuccess) {
             logger.info(
               '-    \u2714 Destination chain contract interactions were successful!'
@@ -168,7 +189,8 @@ export async function simulateAcrossTransaction(
 
 export async function setupVirtualClient(
   chainId: number,
-  tenderlyConfig: TenderlyConfig
+  tenderlyConfig: TenderlyConfig,
+  isRelayer: boolean
 ): Promise<SetupResult> {
   try {
     logger.info('');
@@ -195,18 +217,22 @@ export async function setupVirtualClient(
       transport: http(virtualChainConfig.rpcUrls.default.http[0]),
     });
 
-    const walletClient = createWalletClientWithAccount(virtualChainConfig);
+    const { walletClient, privateKey } = createWalletClientWithAccount(
+      virtualChainConfig,
+      isRelayer
+    );
     if (!walletClient?.account) {
       logger.error('Failed to create wallet client');
       return undefinedChain;
     }
-    logger.info('-  Wallet created successfully');
+    logger.info('-  User wallet created successfully');
 
     return {
       publicClient,
       walletClient,
       chain: virtualChain,
       address: walletClient.account.address,
+      privateKey,
     };
   } catch (error) {
     logger.log('error creating virtual testnet: ', error);
@@ -219,8 +245,9 @@ export async function handleFundingAndApprovals(
   relayerWalletClient: WalletClient,
   deposit: QuoteDeposit,
   originSpokePool: Address,
-  destinationSpokePool: Address,
-  chainParams: VirtualTestnetParams
+  _destinationSpokePool: Address,
+  chainParams: VirtualTestnetParams,
+  tenderlyConfig: TenderlyConfig
 ) {
   try {
     if (!userWalletClient.account || !relayerWalletClient.account) {
@@ -232,20 +259,19 @@ export async function handleFundingAndApprovals(
     logger.info('');
     logger.info('Funding wallets and approvals...');
 
-    await fundWallet(userWalletClient, fundingAmount, chainParams);
-    await fundWallet(relayerWalletClient, fundingAmount, chainParams);
+    await fundWallet(
+      userWalletClient,
+      fundingAmount,
+      chainParams,
+      tenderlyConfig
+    );
 
     await fundErc20(
       userWalletClient,
       deposit.inputToken,
       deposit.inputAmount,
-      chainParams
-    );
-    await fundErc20(
-      relayerWalletClient,
-      deposit.outputToken,
-      deposit.outputAmount,
-      chainParams
+      chainParams,
+      tenderlyConfig
     );
 
     await approveSpokePool(
@@ -253,24 +279,49 @@ export async function handleFundingAndApprovals(
       deposit.inputToken,
       deposit.inputAmount,
       originSpokePool,
-      chainParams
+      chainParams,
+      tenderlyConfig
     );
-    await approveSpokePool(
-      relayerWalletClient,
-      deposit.outputToken,
-      deposit.outputAmount,
-      destinationSpokePool,
-      chainParams
-    );
+
+    // Setting relayer with funding to prevent unnecessary Tenderly calls
+    // Uncomment if you want Tenderly to fund relayer
+    // await fundWallet(
+    //   relayerWalletClient,
+    //   fundingAmount,
+    //   chainParams,
+    //   tenderlyConfig
+    // );
+
+    // Setting relayer with funding to prevent unnecessaryTenderly calls
+    // Uncomment if you want Tenderly to fund relayer
+    // await fundErc20(
+    //   relayerWalletClient,
+    //   deposit.outputToken,
+    //   deposit.outputAmount,
+    //   chainParams,
+    //   tenderlyConfig
+    // );
+
+    // Setting relayer with approval to prevent unnecessary Tenderly calls
+    // Uncomment if you want Tenderly to set approvals for relayer
+    // await approveSpokePool(
+    //   relayerWalletClient,
+    //   deposit.outputToken,
+    //   deposit.outputAmount,
+    //   _destinationSpokePool,
+    //   chainParams,
+    //   tenderlyConfig
+    // );
   } catch {
     logger.error('Error funding and approving accounts');
   }
 }
 
-async function fundWallet(
+export async function fundWallet(
   walletClient: WalletClient,
   amount: bigint,
-  chain: VirtualTestnetParams
+  chain: VirtualTestnetParams,
+  tenderlyConfig: TenderlyConfig
 ) {
   if (!walletClient.account?.address) {
     logger.error('Unable to retrieve wallet client to fund wallet');
@@ -283,20 +334,20 @@ async function fundWallet(
 
   const tenderlyUrl = createTenderlyUrl(
     chain.project,
+    tenderlyConfig.TENDERLY_PROJECT,
     chain.id.toString(),
     chain.tenderlyName,
     txHash
   );
-  logger.info(`- Wallet funding successful:`);
-  logger.info(`-    ${tenderlyUrl}`);
-  logger.info(``);
+  logTransactionSuccess(`User wallet funding successful`, tenderlyUrl);
 }
 
 async function fundErc20(
   walletClient: WalletClient,
   token: Address,
   amount: bigint,
-  chain: VirtualTestnetParams
+  chain: VirtualTestnetParams,
+  tenderlyConfig: TenderlyConfig
 ) {
   if (!walletClient.account?.address) {
     logger.error('Unable to retrieve wallet client to fund wallet');
@@ -308,13 +359,12 @@ async function fundErc20(
   });
   const tenderlyUrl = createTenderlyUrl(
     chain.project,
+    tenderlyConfig.TENDERLY_PROJECT,
     chain.id.toString(),
     chain.tenderlyName,
     txHash
   );
-  logger.info(`- ERC20 wallet funding successful:`);
-  logger.info(`-    ${tenderlyUrl}`);
-  logger.info(``);
+  logTransactionSuccess(`User ERC20 wallet funding successful`, tenderlyUrl);
 }
 
 async function approveSpokePool(
@@ -322,7 +372,8 @@ async function approveSpokePool(
   token: Address,
   amount: bigint,
   spokePool: Address,
-  chain: VirtualTestnetParams
+  chain: VirtualTestnetParams,
+  tenderlyConfig: TenderlyConfig
 ) {
   const txHash = await approveTx(walletClient, token, amount, spokePool);
   if (!txHash) {
@@ -331,11 +382,13 @@ async function approveSpokePool(
   }
   const tenderlyUrl = createTenderlyUrl(
     chain.project,
+    tenderlyConfig.TENDERLY_PROJECT,
     chain.id.toString(),
     chain.tenderlyName,
     txHash
   );
-  logger.info(`- Wallet approved spoke pool:`);
-  logger.info(`-    ${tenderlyUrl}`);
-  logger.info(``);
+  logTransactionSuccess(
+    `Wallet approved spoke pool for user wallet`,
+    tenderlyUrl
+  );
 }

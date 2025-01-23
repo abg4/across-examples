@@ -30,10 +30,12 @@ export async function executeAcrossTxs(
       walletClient,
       chain,
       address: userAddress,
-    } = await setupVirtualClient(config.sourceChain, tenderlyConfig);
+      privateKey,
+    } = await setupVirtualClient(config.sourceChain, tenderlyConfig, false);
 
     const crossChainMessage = await createCrossChainMessage(
-      userAddress as `0x${string}`
+      userAddress as `0x${string}`,
+      privateKey
     );
 
     if (!crossChainMessage) {
@@ -68,7 +70,10 @@ export async function executeAcrossTxs(
     config.fallbackRecipient && isAddress(config.fallbackRecipient)
       ? (config.fallbackRecipient as Address)
       : userAddress;
-  const crossChainMessage = await createCrossChainMessage(recipient);
+  const crossChainMessage = await createCrossChainMessage(
+    recipient,
+    privateKey
+  );
   if (!crossChainMessage) {
     logger.error('Error creating cross-chain message.');
     return;

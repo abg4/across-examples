@@ -3,11 +3,11 @@ import { config } from './config.js';
 import { type CrossChainMessage } from '../../types/index.js';
 
 export async function createCrossChainMessage(
-  fallbackRecipient: Address
+  userAddress: Address
 ): Promise<CrossChainMessage> {
   return {
     // Address to receive tokens if the primary transaction fails. If left empty, the depositor address is used.
-    fallbackRecipient: fallbackRecipient,
+    fallbackRecipient: userAddress,
     // Actions to be executed on the destination chain
     actions: [
       // Example action to approve the contract to spend the output token

@@ -74,7 +74,7 @@ export async function generateSwapCallData(
   amount: bigint,
   outputToken: Address
 ) {
-  let quote = (
+  const quote = (
     await axios.get(
       `https://api.bebop.xyz/pmm/${bebopParams.destinationChain.name}/v3/quote`,
       {

@@ -24,5 +24,5 @@ export const bebopParams = {
     name: 'base',
   },
   tokensAddressBuy: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  multicall: "0x924a9f036260DdD5808007E1AA95f08eD08aA569"
+  multicall: '0x924a9f036260DdD5808007E1AA95f08eD08aA569',
 };

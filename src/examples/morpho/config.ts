@@ -3,7 +3,7 @@ import type { Config } from '../../types/index.js';
 
 export const config: Config = {
   // Address of the contract to interact with on the destination chain
-  contractAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
+  contractAddress: '0x6BFd8137e702540E7A42B74178A4a49Ba43920C4' as Address,
   // Chain ID of the source blockchain network
   sourceChain: 42161,
   // Chain ID of the destination blockchain network
@@ -26,6 +26,20 @@ export const MARKET_PARAMS = {
   lltv: 860000000000000000n,
 };
 
+export const MORPHO_CONTRACTS = {
+  1: {
+    bundler3: '0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245' as Address,
+    generalAdapter: '0x44D08C8ecfBAb871350BC1b4F0F6d2632f186418' as Address,
+    morphoContract: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
+  },
+  8453: {
+    bundler3: '0x6BFd8137e702540E7A42B74178A4a49Ba43920C4' as Address,
+    generalAdapter: '0x8aD36FFc31341ce575F39906bB92df78003c74E2' as Address,
+    morphoContract: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
+  },
+};
+
 export const BORROW_AMOUNT = parseUnits('0.001', 18);
 
-export const BASE_MULTICALL = '0x924a9f036260DdD5808007E1AA95f08eD08aA569';
+export const EMPTY_CALLBACK_HASH =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
